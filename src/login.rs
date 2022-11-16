@@ -1,3 +1,4 @@
+use std::fmt;
 use std::error::Error;
 
 use reqwest::Client;
@@ -18,6 +19,17 @@ struct GetAssertionParams<'a> {
     name: &'a str,
     challstr: &'a str,
 }
+
+#[derive(Debug, Clone)]
+struct LoginError(String);
+
+impl fmt::Display for LoginError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Error for LoginError {}
 
 /// Constructor for client login command to be sent to a PS server.
 pub async fn login(
@@ -40,7 +52,7 @@ pub async fn login(
         .expect("no prefix"))
     {
         Ok(v) => Ok(v["assertion"].to_string()),
-        Err(_) => Ok(resp_body.to_string()),
+        Err(_) => Err(LoginError(resp_body).into()),
     }
 }
 
@@ -64,16 +76,17 @@ pub async fn get_assertion(
     Ok(resp_body)
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test]
+    async fn test_get_assertion() {
+        let _assertion = get_assertion("test", "test").await.unwrap();
+    }
+
+    #[tokio::test]
     async fn test_login() {
-        let assertion = get_assertion("test", "test").await.unwrap();
-        eprintln!("{assertion}");
+        let _assertion = login("test", "test", "test").await.unwrap();
     }
 }
