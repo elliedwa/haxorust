@@ -1,4 +1,3 @@
-use haxorust::login::login;
 use tokio_stream::StreamExt;
 use tokio_tungstenite::tungstenite::protocol::Message;
 
@@ -18,7 +17,7 @@ async fn test_login() {
             if let (_, ChallStr(challstr)) = haxorust::protocol::parse(&msg)
                 .expect("couldn't parse challstr")
             {
-                let assertion = login("Deceiving9908", dbg!(&challstr))
+                let assertion = haxorust::login::get_assertion("Thirty7689", &challstr)
                     .await
                     .expect("problem logging in");
                 tx.send(assertion)
@@ -28,8 +27,8 @@ async fn test_login() {
         }
     });
 
-    if let Some(assertion) = rx.recv().await {
-        println!("got = {:#?}", assertion);
+    while let Some(assertion) = rx.recv().await {
+        println!("got = {:#?}",assertion);
         std::process::exit(0);
     }
 }
