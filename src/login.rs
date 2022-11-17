@@ -1,9 +1,13 @@
-use std::fmt;
-use std::error::Error;
-
 use reqwest::Client;
-use serde_json::Value;
 use serde::Serialize;
+use serde_json::Value;
+use std::error::Error;
+use std::fmt;
+use tokio_stream::StreamExt;
+use tokio_tungstenite::tungstenite::protocol::Message;
+
+use crate::socket::ShowdownStream;
+use crate::{protocol, Result};
 
 #[derive(Serialize, Debug)]
 struct LoginParams<'a> {
@@ -32,13 +36,14 @@ impl fmt::Display for LoginError {
 impl Error for LoginError {}
 
 /// Constructor for client login command to be sent to a PS server.
-pub async fn login(
-    name: &str,
-    pass: &str,
-    challstr: &str,
-) -> Result<String, Box<dyn Error>> {
+pub async fn login(name: &str, pass: &str, challstr: &str) -> Result<String> {
     let client = Client::new();
-    let params = LoginParams { act: "login", name, pass, challstr };
+    let params = LoginParams {
+        act: "login",
+        name,
+        pass,
+        challstr,
+    };
     let resp_body: String = client
         .post("http://play.pokemonshowdown.com/action.php")
         .form(&params)
@@ -47,24 +52,20 @@ pub async fn login(
         .text()
         .await?;
 
-    match serde_json::from_str::<Value>(resp_body
-        .strip_prefix(']')
-        .expect("no prefix"))
-    {
+    match serde_json::from_str::<Value>(
+        resp_body.strip_prefix(']').expect("no prefix"),
+    ) {
         Ok(v) => Ok(v["assertion"].to_string()),
         Err(_) => Err(LoginError(resp_body).into()),
     }
 }
 
-pub async fn get_assertion(
-    name: &str,
-    challstr: &str,
-) -> Result<String, Box<dyn Error>> {
+pub async fn get_assertion(name: &str, challstr: &str) -> Result<String> {
     let client = Client::new();
     let params = GetAssertionParams {
         act: "getassertion",
         name,
-        challstr
+        challstr,
     };
     let resp_body: String = client
         .post("http://play.pokemonshowdown.com/action.php")
@@ -76,9 +77,36 @@ pub async fn get_assertion(
     Ok(resp_body)
 }
 
+pub async fn challstr(stream: &mut ShowdownStream) -> Result<String> {
+    while let Ok(Message::Text(msg)) =
+        stream.next().await.expect("error reading stream")
+    {
+        if let (_, protocol::Message::ChallStr(challstr)) =
+            protocol::parse(&msg).expect("couldn't parse challstr")
+        {
+            return Ok(challstr.to_string());
+        } else {
+            continue;
+        }
+    }
+    Err(LoginError("couldn't login".to_string()).into())
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::socket;
+
     use super::*;
+
+    #[tokio::test]
+    async fn test_challstr() {
+        let mut stream =
+            socket::connect("ws://sim.smogon.com/showdown/websocket")
+                .await
+                .unwrap();
+        let challstr = challstr(&mut stream).await.unwrap();
+        eprintln!("{challstr}");
+    }
 
     #[tokio::test]
     async fn test_get_assertion() {

@@ -17,9 +17,10 @@ async fn test_login() {
             if let (_, ChallStr(challstr)) = haxorust::protocol::parse(&msg)
                 .expect("couldn't parse challstr")
             {
-                let assertion = haxorust::login::get_assertion("Thirty7689", &challstr)
-                    .await
-                    .expect("problem logging in");
+                let assertion =
+                    haxorust::login::get_assertion("Thirty7689", &challstr)
+                        .await
+                        .expect("problem logging in");
                 tx.send(assertion)
                     .await
                     .expect("couldn't send assertion through channel");
@@ -28,7 +29,7 @@ async fn test_login() {
     });
 
     while let Some(assertion) = rx.recv().await {
-        println!("got = {:#?}",assertion);
+        println!("got = {:#?}", assertion);
         std::process::exit(0);
     }
 }
