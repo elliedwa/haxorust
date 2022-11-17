@@ -57,6 +57,12 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_login_with_name_env() {
+        env::set_var("PS_USERNAME", "test");
+        assert!(Player::login_with_env().await.is_ok());
+    }
+
+    #[tokio::test]
     async fn test_player_login() {
         env::set_var("PS_USERNAME", "Zendigo0285");
         env::remove_var("PS_PASSWORD");
