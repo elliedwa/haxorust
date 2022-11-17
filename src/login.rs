@@ -84,7 +84,7 @@ pub async fn challstr(stream: &mut ShowdownStream) -> Result<String> {
         if let (_, protocol::Message::ChallStr(challstr)) =
             protocol::parse(&msg).expect("couldn't parse challstr")
         {
-            return Ok(challstr.to_string());
+            return Ok(challstr);
         } else {
             continue;
         }
@@ -95,6 +95,7 @@ pub async fn challstr(stream: &mut ShowdownStream) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use crate::socket;
+
 
     use super::*;
 
