@@ -13,7 +13,7 @@ pub struct Player {
 impl Player {
     pub async fn login_with_env() -> Result<Self> {
         let mut connection: ShowdownStream =
-            socket::connect(&env::var("SHOWDOWN_SOCKET").unwrap_or(
+            socket::connect(&env::var("SHOWDOWN_SOCKET").unwrap_or_else(|_|
                 "ws://sim.smogon.com/showdown/websocket".to_string(),
             ))
             .await?;
@@ -51,10 +51,9 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    #[should_panic]
     async fn test_login_without_name_env() {
         env::remove_var("PS_USERNAME");
-        Player::login_with_env().await.unwrap();
+        assert!(Player::login_with_env().await.is_err());
     }
 
     #[tokio::test]
