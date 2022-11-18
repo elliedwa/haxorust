@@ -96,7 +96,6 @@ pub async fn challstr(stream: &mut ShowdownStream) -> Result<String> {
 mod tests {
     use crate::socket;
 
-
     use super::*;
 
     #[tokio::test]
@@ -104,8 +103,9 @@ mod tests {
         let mut stream =
             socket::connect("ws://sim.smogon.com/showdown/websocket")
                 .await
-                .unwrap();
-        let challstr = challstr(&mut stream).await.unwrap();
+                .expect("Could not connect to socket");
+        let challstr =
+            challstr(&mut stream).await.expect("Could not get challstr");
         eprintln!("{challstr}");
     }
 
